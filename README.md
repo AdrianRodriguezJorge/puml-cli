@@ -89,3 +89,18 @@ On first execution, a `config.json` configuration file is generated in the root 
 * **`default_dpi`** (integer): The resolution scale applied to exports when `enable_dpi_selection` is `false` (e.g. `600` for high-quality printing).
 * **`default_theme`** (string / null): The default PlantUML theme applied when `enable_theme_selection` is `false` (e.g. `"spacelab"`). Set to `null` to use the standard default PlantUML style.
 * **`language`** (string): Active language interface. Choose `"en"` for English or `"es"` for Spanish. Can be changed dynamically inside the app by pressing `L` in the menu.
+
+---
+
+## Uninstallation
+
+If you wish to remove the toolbox and clean up system entries:
+1. Run the uninstaller batch file:
+   ```cmd
+   uninstall.bat
+   ```
+2. The interactive script will:
+   * **Remove PATH Entry**: Safely delete the project directory from your Windows User `PATH` environment variable in the registry, broadcasting the updates.
+   * **JAR File Cleanup**: Prompt you (in your active language) for confirmation before deleting the downloaded `plantuml.jar` file.
+   * **Config Cleanup**: Delete `config.json` automatically.
+
