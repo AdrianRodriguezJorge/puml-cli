@@ -15,7 +15,7 @@ def load_or_create_config():
     default_config = {
         "jar_path": "plantuml.jar",
         "enable_theme_selection": False,
-        "enable_dpi_selection": false,
+        "enable_dpi_selection": False,
         "default_dpi": 600,
         "default_theme": None,
         "language": "en"
