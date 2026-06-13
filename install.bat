@@ -4,13 +4,13 @@ setlocal enabledelayedexpansion
 REM Verify if Python is installed
 py --version >nul 2>&1
 if %errorlevel% equ 0 (
-    py install.py %*
+    py setup/install.py %*
     goto end
 )
 
 python --version >nul 2>&1
 if %errorlevel% equ 0 (
-    python install.py %*
+    python setup/install.py %*
     goto end
 )
 

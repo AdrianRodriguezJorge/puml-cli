@@ -6,14 +6,17 @@ import urllib.request
 import winreg
 import ctypes
 
+# Resolve the project root folder (parent of the setup directory containing this script)
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 def load_or_create_config():
-    """Load config.json or create a default one if it doesn't exist."""
-    config_path = "config.json"
+    """Load config.json from root or create a default one if it doesn't exist."""
+    config_path = os.path.join(ROOT_DIR, "config.json")
     default_config = {
-        "jar_path": "plantuml.jar",
+        "jar_path": "",
         "enable_theme_selection": False,
         "enable_dpi_selection": False,
         "default_dpi": 600,
@@ -31,8 +34,8 @@ def load_or_create_config():
         return default_config
 
 def save_config(config):
-    """Save the configuration dictionary to config.json."""
-    config_path = "config.json"
+    """Save the configuration dictionary to config.json in root."""
+    config_path = os.path.join(ROOT_DIR, "config.json")
     try:
         with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=4)
@@ -40,11 +43,11 @@ def save_config(config):
         print(f"[ERROR] Could not save config.json: {e}")
 
 def run_pip_install(lang):
-    """Install dependencies from requirements.txt system-wide."""
+    """Install dependencies from setup/requirements.txt system-wide."""
     msg_installing = (
-        "Installing Python dependencies system-wide from requirements.txt..."
+        "Installing Python dependencies system-wide from setup/requirements.txt..."
         if lang == 'en' else
-        "Instalando dependencias de Python a nivel de sistema desde requirements.txt..."
+        "Instalando dependencias de Python a nivel de sistema desde setup/requirements.txt..."
     )
     msg_success = (
         "Dependencies installed successfully!"
@@ -58,10 +61,9 @@ def run_pip_install(lang):
     )
 
     print(f"\n>>> {msg_installing}")
+    requirements_path = os.path.join(os.path.dirname(__file__), "requirements.txt")
     try:
-        # Run pip install system-wide (no environment)
-        # Use sys.executable to ensure we run pip on the active python environment
-        cmd = [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"]
+        cmd = [sys.executable, "-m", "pip", "install", "-r", requirements_path]
         process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if process.returncode == 0:
             print(f"[INFO] {msg_success}")
@@ -93,7 +95,6 @@ def download_jar(dest_path, lang):
         readsofar = blocknum * blocksize
         if totalsize > 0:
             percent = readsofar * 1e2 / totalsize
-            # Print text-based progress bar
             sys.stdout.write(f"\r[{percent:5.1f}%] {readsofar / (1024*1024):.2f} MB / {totalsize / (1024*1024):.2f} MB")
             sys.stdout.flush()
         else:
@@ -136,7 +137,6 @@ def add_to_user_path(script_dir, lang):
     print(f"\n>>> {msg_adding}")
     
     try:
-        # Open User Environment Registry key
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0, winreg.KEY_ALL_ACCESS)
         try:
             try:
@@ -144,20 +144,16 @@ def add_to_user_path(script_dir, lang):
             except FileNotFoundError:
                 current_path = ""
             
-            # Split paths and filter empty
             paths = [p.strip() for p in current_path.split(';') if p.strip()]
             
-            # Check for case-insensitive duplicate
             if script_dir.lower() in [p.lower() for p in paths]:
                 print(f"[INFO] {msg_already_in_path}")
                 return True
             
-            # Append and update registry value
             paths.append(script_dir)
             new_path = ';'.join(paths)
             winreg.SetValueEx(key, "Path", 0, winreg.REG_SZ, new_path)
             
-            # Broadcast changes to Environment
             HWND_BROADCAST = 0xFFFF
             WM_SETTINGCHANGE = 0x001A
             result = ctypes.c_ulong()
@@ -204,7 +200,6 @@ def main():
     if lang_choice == "2":
         lang = "es"
     
-    # Persist the selected language in config
     config["language"] = lang
     save_config(config)
     
@@ -219,20 +214,18 @@ def main():
     
     # 4. Check for PlantUML JAR
     jar_path = config.get("jar_path", "")
-    # Resolve relative to current directory if not absolute
-    full_jar_path = jar_path if os.path.isabs(jar_path) else os.path.join(os.getcwd(), jar_path)
+    full_jar_path = jar_path if os.path.isabs(jar_path) else os.path.join(ROOT_DIR, jar_path)
     
     jar_exists = os.path.isfile(full_jar_path) if jar_path else False
     
-    # If the configured JAR doesn't exist, search the current directory for any plantuml*.jar
+    # If the configured JAR doesn't exist, search the root directory for any plantuml*.jar
     if not jar_exists:
-        found_jars = [f for f in os.listdir('.') if f.lower().startswith("plantuml") and f.lower().endswith(".jar")]
+        found_jars = [f for f in os.listdir(ROOT_DIR) if f.lower().startswith("plantuml") and f.lower().endswith(".jar")]
         if found_jars:
-            # Pick the first matching jar
             selected_jar = found_jars[0]
             config["jar_path"] = selected_jar
             save_config(config)
-            full_jar_path = os.path.join(os.getcwd(), selected_jar)
+            full_jar_path = os.path.join(ROOT_DIR, selected_jar)
             jar_exists = True
             
             msg_found_local = (
@@ -252,7 +245,7 @@ def main():
         ans = input(prompt_download).strip().lower()
         if ans in ['', 'y', 'yes', 's', 'si']:
             dest_jar_name = "plantuml.jar"
-            dest_path = os.path.join(os.getcwd(), dest_jar_name)
+            dest_path = os.path.join(ROOT_DIR, dest_jar_name)
             success = download_jar(dest_path, lang)
             if success:
                 config["jar_path"] = dest_jar_name
@@ -266,9 +259,9 @@ def main():
                 print(f"[WARNING] {msg_err}")
         else:
             msg_manual = (
-                "Remember to place your PlantUML JAR in this directory and update config.json."
+                "Remember to place your PlantUML JAR in the root directory and update config.json."
                 if lang == 'en' else
-                "Recuerda colocar tu archivo JAR de PlantUML en esta carpeta y actualizar config.json."
+                "Recuerda colocar tu archivo JAR de PlantUML en la carpeta raíz y actualizar config.json."
             )
             print(f"[INFO] {msg_manual}")
     else:
@@ -280,7 +273,7 @@ def main():
         print(f"[INFO] {msg_jar_ok}")
         
     # 5. Add to PATH
-    add_to_user_path(os.getcwd(), lang)
+    add_to_user_path(ROOT_DIR, lang)
     
     # 6. Output final instructions
     msg_finish_header = (
@@ -308,7 +301,6 @@ def main():
     print(msg_finish_body)
     print("=" * 80)
     
-    # Pause so user can read before terminal closes
     input("\nPress Enter to exit / Presiona Enter para salir..." if lang == 'en' else "\nPresiona Enter para salir...")
 
 if __name__ == "__main__":

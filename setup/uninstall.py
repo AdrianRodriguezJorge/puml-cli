@@ -4,6 +4,9 @@ import json
 import winreg
 import ctypes
 
+# Resolve the project root folder (parent of the setup directory containing this script)
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
 # Simple i18n for the uninstaller
 TRANSLATIONS = {
     "en": {
@@ -17,7 +20,7 @@ TRANSLATIONS = {
         "jar_prompt": "Do you want to delete this PlantUML JAR file? (y/n) [n]: ",
         "jar_deleted": "JAR file deleted successfully.",
         "jar_skipped": "JAR file deletion skipped.",
-        "config_deleted": "Configuration file (config.json) deleted successfully.",
+        "config_deleted": "Configuration file (config.json) reset to defaults.",
         "finish_header": "UNINSTALLATION SUCCESSFUL!",
         "finish_body": "The toolbox has been successfully unregistered from your system.\nYou can now safely delete the project folder.",
         "press_enter": "Press Enter to exit..."
@@ -33,7 +36,7 @@ TRANSLATIONS = {
         "jar_prompt": "¿Deseas eliminar este archivo JAR de PlantUML? (s/n) [n]: ",
         "jar_deleted": "Archivo JAR eliminado con éxito.",
         "jar_skipped": "Se omitió la eliminación del archivo JAR.",
-        "config_deleted": "Archivo de configuración (config.json) eliminado con éxito.",
+        "config_deleted": "Archivo de configuración (config.json) restablecido a los valores por defecto.",
         "finish_header": "¡DESINSTALACIÓN COMPLETADA CON ÉXITO!",
         "finish_body": "La herramienta ha sido dada de baja correctamente de tu sistema.\nAhora puedes eliminar la carpeta del proyecto de forma segura.",
         "press_enter": "Presiona Enter para salir..."
@@ -44,8 +47,8 @@ def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 def load_lang():
-    """Load configuration language if config.json exists."""
-    config_path = "config.json"
+    """Load configuration language if config.json exists in the root."""
+    config_path = os.path.join(ROOT_DIR, "config.json")
     if os.path.exists(config_path):
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
@@ -61,7 +64,6 @@ def remove_from_user_path(script_dir, lang, t):
     print(f"\n>>> {t['path_removing'].format(path=script_dir)}")
     
     try:
-        # Open User Environment Registry key
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0, winreg.KEY_ALL_ACCESS)
         try:
             try:
@@ -69,10 +71,8 @@ def remove_from_user_path(script_dir, lang, t):
             except FileNotFoundError:
                 current_path = ""
             
-            # Split paths and filter empty
             paths = [p.strip() for p in current_path.split(';') if p.strip()]
             
-            # Find the path in user PATH (case-insensitive)
             initial_count = len(paths)
             paths = [p for p in paths if p.lower() != script_dir.lower()]
             
@@ -80,11 +80,9 @@ def remove_from_user_path(script_dir, lang, t):
                 print(f"[INFO] {t['path_not_found']}")
                 return True
             
-            # Join and update registry value
             new_path = ';'.join(paths)
             winreg.SetValueEx(key, "Path", 0, winreg.REG_SZ, new_path)
             
-            # Broadcast changes to environment variables
             HWND_BROADCAST = 0xFFFF
             WM_SETTINGCHANGE = 0x001A
             result = ctypes.c_ulong()
@@ -109,28 +107,25 @@ def remove_from_user_path(script_dir, lang, t):
 def handle_jar_deletion(lang, t):
     """Search for the configured or downloaded JAR files and conditionally delete them."""
     jar_file = None
-    config_path = "config.json"
+    config_path = os.path.join(ROOT_DIR, "config.json")
     
-    # 1. Read JAR path from config if possible
     if os.path.exists(config_path):
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
                 config = json.load(f)
                 jar_path = config.get("jar_path", "")
                 if jar_path:
-                    full_path = jar_path if os.path.isabs(jar_path) else os.path.join(os.getcwd(), jar_path)
+                    full_path = jar_path if os.path.isabs(jar_path) else os.path.join(ROOT_DIR, jar_path)
                     if os.path.exists(full_path):
                         jar_file = full_path
         except Exception:
             pass
             
-    # 2. Fall back to searching local directory for plantuml.jar
     if not jar_file:
-        fallback = os.path.join(os.getcwd(), "plantuml.jar")
+        fallback = os.path.join(ROOT_DIR, "plantuml.jar")
         if os.path.exists(fallback):
             jar_file = fallback
             
-    # 3. If found, prompt for deletion
     if jar_file and os.path.exists(jar_file):
         print(f"\n[INFO] {t['jar_found'].format(path=jar_file)}")
         ans = input(t["jar_prompt"]).strip().lower()
@@ -155,13 +150,13 @@ def main():
     print(t["starting"])
     
     # 1. Remove from PATH registry
-    remove_from_user_path(os.getcwd(), lang, t)
+    remove_from_user_path(ROOT_DIR, lang, t)
     
     # 2. Handle JAR deletion prompt
     handle_jar_deletion(lang, t)
     
     # 3. Reset config.json to defaults
-    config_path = "config.json"
+    config_path = os.path.join(ROOT_DIR, "config.json")
     if os.path.exists(config_path):
         try:
             default_config = {
@@ -174,8 +169,7 @@ def main():
             }
             with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(default_config, f, indent=4)
-            msg_reset = "Configuration file (config.json) reset to defaults." if lang == 'en' else "Archivo de configuración (config.json) restablecido a los valores por defecto."
-            print(f"[INFO] {msg_reset}")
+            print(f"[INFO] {t['config_deleted']}")
         except Exception as e:
             print(f"[ERROR] Could not reset config.json: {e}")
             
