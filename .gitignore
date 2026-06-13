@@ -1,0 +1,14 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# GitHub CLI directory
+gh_cli/
+
+# PlantUML JAR files
+plantuml*.jar
+
+# Local/OS files
+.DS_Store
+Thumbs.db
