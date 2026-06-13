@@ -327,11 +327,11 @@ def main():
         print_header(os.getcwd())
         
         # 2. Check PlantUML JAR
-        jar_path = config.get("jar_path", "plantuml.jar")
+        jar_path = config.get("jar_path", "")
         # Resolve path
         full_jar_path = jar_path if os.path.isabs(jar_path) else os.path.join(os.getcwd(), jar_path)
         
-        if not os.path.exists(full_jar_path):
+        if not (jar_path and os.path.isfile(full_jar_path)):
             print_message(t("jar_not_found"), "error")
             print_message(t("jar_placement_info"), "info")
             if HAS_RICH:

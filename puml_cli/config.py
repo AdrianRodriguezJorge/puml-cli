@@ -3,7 +3,7 @@ import json
 
 # Default configuration settings
 DEFAULT_CONFIG = {
-    "jar_path": "plantuml.jar",
+    "jar_path": "",
     "enable_theme_selection": False,
     "enable_dpi_selection": False,
     "default_dpi": 600,

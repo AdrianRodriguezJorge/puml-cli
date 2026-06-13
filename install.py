@@ -218,11 +218,11 @@ def main():
     run_pip_install(lang)
     
     # 4. Check for PlantUML JAR
-    jar_path = config.get("jar_path", "plantuml.jar")
+    jar_path = config.get("jar_path", "")
     # Resolve relative to current directory if not absolute
     full_jar_path = jar_path if os.path.isabs(jar_path) else os.path.join(os.getcwd(), jar_path)
     
-    jar_exists = os.path.exists(full_jar_path)
+    jar_exists = os.path.isfile(full_jar_path) if jar_path else False
     
     # If the configured JAR doesn't exist, search the current directory for any plantuml*.jar
     if not jar_exists:

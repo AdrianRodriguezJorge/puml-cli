@@ -160,14 +160,24 @@ def main():
     # 2. Handle JAR deletion prompt
     handle_jar_deletion(lang, t)
     
-    # 3. Delete config.json
+    # 3. Reset config.json to defaults
     config_path = "config.json"
     if os.path.exists(config_path):
         try:
-            os.remove(config_path)
-            print(f"[INFO] {t['config_deleted']}")
+            default_config = {
+                "jar_path": "",
+                "enable_theme_selection": False,
+                "enable_dpi_selection": False,
+                "default_dpi": 600,
+                "default_theme": None,
+                "language": "en"
+            }
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(default_config, f, indent=4)
+            msg_reset = "Configuration file (config.json) reset to defaults." if lang == 'en' else "Archivo de configuración (config.json) restablecido a los valores por defecto."
+            print(f"[INFO] {msg_reset}")
         except Exception as e:
-            print(f"[ERROR] Could not delete config.json: {e}")
+            print(f"[ERROR] Could not reset config.json: {e}")
             
     # 4. Finish
     print("\n" + "=" * 80)
