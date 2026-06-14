@@ -11,11 +11,18 @@ DEFAULT_CONFIG = {
     "language": "en"
 }
 
-def load_config(config_path="config.json"):
+# Resolve the package installation folder
+INSTALL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+DEFAULT_CONFIG_PATH = os.path.join(INSTALL_DIR, "config.json")
+
+def load_config(config_path=None):
     """
     Load the JSON configuration file and merge it with DEFAULT_CONFIG
     to ensure all default options are present.
     """
+    if config_path is None:
+        config_path = DEFAULT_CONFIG_PATH
+        
     config = DEFAULT_CONFIG.copy()
     if os.path.exists(config_path):
         try:
@@ -26,10 +33,13 @@ def load_config(config_path="config.json"):
             pass  # Fall back to default config if reading fails
     return config
 
-def save_config(config, config_path="config.json"):
+def save_config(config, config_path=None):
     """
     Save the given configuration dictionary to config.json.
     """
+    if config_path is None:
+        config_path = DEFAULT_CONFIG_PATH
+        
     try:
         with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=4)

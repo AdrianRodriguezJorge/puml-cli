@@ -328,8 +328,9 @@ def main():
         
         # 2. Check PlantUML JAR
         jar_path = config.get("jar_path", "")
-        # Resolve path
-        full_jar_path = jar_path if os.path.isabs(jar_path) else os.path.join(os.getcwd(), jar_path)
+        # Resolve path relative to the toolbox installation folder
+        INSTALL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        full_jar_path = jar_path if os.path.isabs(jar_path) else os.path.join(INSTALL_DIR, jar_path)
         
         if not (jar_path and os.path.isfile(full_jar_path)):
             print_message(t("jar_not_found"), "error")
@@ -340,9 +341,10 @@ def main():
                 custom_jar = input(f"{t('enter_custom_jar')}: ").strip()
                 
             if custom_jar and os.path.exists(custom_jar):
-                config["jar_path"] = custom_jar
+                abs_custom_jar = os.path.abspath(custom_jar)
+                config["jar_path"] = abs_custom_jar
                 save_config(config)
-                full_jar_path = custom_jar
+                full_jar_path = abs_custom_jar
             else:
                 print_message(t("no_jar_abort"), "error")
                 break
